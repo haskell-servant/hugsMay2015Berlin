@@ -1,0 +1,492 @@
+\documentclass{beamer}
+
+\usepackage{verbatim}
+
+\title{Servant}
+\subtitle{A Type-Level DSL for Writing and Interacting with web APIs}
+\author{Julian K. Arni}
+
+
+% Add support for \subsubsectionpage
+\def\subsubsectionname{\translate{Subsubsection}}
+\def\insertsubsubsectionnumber{\arabic{subsubsection}}
+\setbeamertemplate{subsubsection page}
+{
+  \begin{centering}
+    {\usebeamerfont{subsubsection name}\usebeamercolor[fg]{subsubsection name}\subsubsectionname~\insertsubsubsectionnumber}
+    \vskip1em\par
+    \begin{beamercolorbox}[sep=4pt,center]{part title}
+      \usebeamerfont{subsubsection title}\insertsubsubsection\par
+    \end{beamercolorbox}
+  \end{centering}
+}
+\def\subsubsectionpage{\usebeamertemplate*{subsubsection page}}
+
+\AtBeginSection{\frame{\sectionpage}}
+\AtBeginSubsection{\frame{\subsectionpage}}
+\AtBeginSubsubsection{\frame{\subsubsectionpage}}
+
+\makeatletter
+\newcommand{\verbatimfont}[1]{\renewcommand{\verbatim@font}{\ttfamily#1}}
+\makeatother
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\frame{\titlepage}
+
+\begin{frame}
+    \frametitle{Outline}
+    \tableofcontents[]
+\end{frame}
+
+\section{Prelude} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+    The identity function:
+\begin{verbatim}
+a -> a
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+    The identity function:
+\begin{verbatim}
+a -> a
+\end{verbatim}
+    The identity (echo) server:
+\begin{verbatim}
+Request -> IO Response
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+    The reverse function:
+\begin{verbatim}
+[a] -> [a]
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+    The reverse function:
+\begin{verbatim}
+[a] -> [a]
+\end{verbatim}
+    The reverse server:
+\begin{verbatim}
+Request -> IO Response
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+    An informal specification of the identity function:
+\begin{quotation}
+    For any input, the function must return the input unchanged.
+\end{quotation}
+\end{frame}
+
+\begin{frame}[fragile]
+    An informal specification of the identity function:
+\begin{quotation}
+    For any input, the function must return the input unchanged.
+\end{quotation}
+
+    An informal specification of the echo function:
+\begin{quotation}
+    For any request, if the request has URL \texttt{"echo"}, \textit{and} the
+    request method is \texttt{POST}, \textit{and} the \texttt{Content-Type}
+    header is acceptable according to the \texttt{Accept} header of the request,
+    \textit{then} the function must return the request body unchanged, with the
+    \textit{Content-Type} header of the response set to that of the request.
+\end{quotation}
+\end{frame}
+
+
+\section{Leaving Values Aside}%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+    What would types look like if we didn't have to worry about their
+    inhabitants?
+\end{frame}
+
+\begin{frame}
+    What would types look like if we didn't have to worry about their
+    inhabitants?
+
+    \textit{Like a DSL!}
+\end{frame}
+
+\begin{frame}[fragile]
+    What would types look like if we didn't have to worry about their
+    inhabitants?
+
+\begin{verbatim}
+Exp := Method CTypes Type
+     |'ReqBody' CTypes Type ':>' Exp
+     | StringLit ':>' Exp
+     | Exp ':<|>' Exp
+     ...
+\end{verbatim}
+
+\begin{verbatim}
+CTypes := ''[' CType, ... ']'
+CType := 'JSON'
+       | 'XML'
+       | 'HTML'
+       ...
+\end{verbatim}
+
+\begin{verbatim}
+Method := 'Get'
+        | 'Post'
+        ...
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+Terms are (usually) uninhabited types:
+    \begin{verbatim}
+data a :> b
+data Get (ctypes :: [*]) a
+data a :<|> b
+data ReqBody (ctypes :: [*]) a
+...
+    \end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+An example:
+\begin{verbatim}
+type EchoAPI = "echo" :> ReqBody '[JSON, XML, ...] a
+                      :> Post '[JSON, XML, ...] a
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+An example:
+\begin{verbatim}
+type EchoAPI = "echo" :> ReqBody '[JSON, XML, ...] a
+                      :> Post '[JSON, XML, ...] a
+\end{verbatim}
+Most of our informal specifications are now expressed in the type level.
+\end{frame}
+
+\begin{frame}[fragile]
+\begin{verbatim}
+type EchoAPI = "echo" :> ReqBody '[JSON, XML, ...] a
+                      :> Post '[JSON, XML, ...] a
+\end{verbatim}
+Most of our informal specifications are now expressed in the type level.
+
+This doesn't \textit{do} anything yet. No values inhabit this type. And we
+can't get any functionality from it.
+\end{frame}
+
+\begin{frame}[fragile]
+\begin{verbatim}
+type EchoAPI = "echo" :> ReqBody '[JSON, XML, ...] a
+                      :> Post '[JSON, XML, ...] a
+\end{verbatim}
+Most of our informal specifications are now expressed in the type level.
+
+This doesn't \textit{do} anything yet. No values inhabit this type. And we
+can't get any functionality from it.
+
+But it is a \textit{unified} language for describing web APIs.
+\end{frame}
+
+\section{Interpreting Types}%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Intepreting Types as Values} %------------------------------------
+
+\begin{frame}
+A simple example.
+\end{frame}
+
+\begin{frame}[fragile]
+A simple example.
+\begin{verbatim}
+type Five = Add 1 (Add 2 2)
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+A simple example.
+\begin{verbatim}
+type Five = Add 1 (Add 2 2)
+\end{verbatim}
+This is just a type.
+\end{frame}
+
+\begin{frame}[fragile]
+A simple example.
+\begin{verbatim}
+type Five = Add 1 (Add 2 2)
+\end{verbatim}
+This is just a type.
+But we can \textit{interpret} it!
+\end{frame}
+
+\begin{frame}[fragile]
+A simple example.
+\begin{verbatim}
+type Five = Add 1 (Add 2 2)
+\end{verbatim}
+
+\begin{verbatim}
+class AsInt a where
+    asInt :: Proxy a -> Int
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+A simple example.
+\begin{verbatim}
+type Five = Add 1 (Add 2 2)
+\end{verbatim}
+
+\begin{verbatim}
+class AsInt a where
+    asInt :: Proxy a -> Int
+
+instance (AsInt a, AsInt b) => AsInt (Add a b) where
+    asInt _ = asInt (Proxy :: Proxy a)
+            + asInt (Proxy :: Proxy b)
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+A simple example.
+\begin{verbatim}
+type Five = Add 1 (Add 2 2)
+\end{verbatim}
+
+\begin{verbatim}
+class AsInt a where
+    asInt :: Proxy a -> Integer
+
+instance (AsInt a, AsInt b) => AsInt (Add a b) where
+    asInt _ = asInt (Proxy :: Proxy a)
+            + asInt (Proxy :: Proxy b)
+
+instance (KnownNat a) => AsInt a where
+    asInt _ = natVal (Proxy :: Proxy a)
+\end{verbatim}
+\end{frame}
+
+\begin{frame}
+This is the essence of \textit{servant}
+\end{frame}
+
+\begin{frame}
+This is the essence of \textit{servant}
+
+It is \textit{extensible}.
+\end{frame}
+
+\begin{frame}
+This is the essence of \textit{servant}
+
+It is \textit{extensible}.
+
+Exercise: add support for \texttt{Mult} without changing any of the code we
+wrote so far.
+\end{frame}
+
+\begin{frame}
+This is the essence of \textit{servant}
+
+It is \textit{extensible}.
+
+Exercise: add support for \texttt{Mult} without changing any of the code we
+wrote so far.
+\end{frame}
+
+\begin{frame}[fragile]
+\begin{verbatim}
+type Application = Request -> IO Response
+class HasServer a where
+  type Server a
+  route :: Proxy a -> Server a -> Application
+\end{verbatim}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\begin{verbatim}
+class HasServer a where
+  type Server a
+  route :: Proxy a -> Server a -> Application
+
+instance ToJSON a => HasServer (Get a) where
+  type Server (Get a) = IO a
+  route Proxy val req = encode <$> val
+
+encode :: ToJSON a => a -> ByteString
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\begin{verbatim}
+class HasServer a where
+  type Server a
+  route :: Proxy a -> Server a -> Application
+
+instance (HasServer a, KnownSymbol path)
+  => HasServer (path :> a) where
+  type Server (path :> a) = Server a
+  route Proxy val req = if req `startsWith` p
+      then route pr val (req `stripPath` p)
+      else return notFound
+    where pt = symbolVal (Proxy :: Proxy path)
+          pr = Proxy :: Proxy a
+
+encode :: ToJSON a => a -> ByteString
+\end{verbatim}
+\end{frame}
+
+\subsection{Intepreting Types as Types} %------------------------------------
+
+\begin{frame}
+So far we've been focusing on types as data.
+\end{frame}
+
+\begin{frame}[fragile]
+\begin{verbatim}
+class HasServer a where
+  type Server a
+  route :: Proxy a -> Server a -> Application
+
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\begin{verbatim}
+class HasServer a where
+  type Server a  -- Here!
+  route :: Proxy a -> Server a -> Application
+
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\begin{verbatim}
+class HasServer a where
+  type Server a
+  route :: Proxy a -> Server a -> Application
+
+instance MimeRender ct a => HasServer (Get ct a) where
+  type Server (Get a) = IO a
+  route Proxy val req = mimeRender <$> val
+
+class MimeRender ct val where
+  mimeRender :: val -> ByteString
+
+data JSON
+
+instance ToJSON val => MimeRender JSON val where
+  mimeRender = encode
+
+...
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\begin{verbatim}
+type family IsElem link api :: Constraint where
+  IsElem e (sa :<|> sb) = IsElem e sa `Or` IsElem e sb
+  IsElem (a1 :> b1) (a1 :> b2) = IsElem b1 b2
+  ...
+  IsElem (Get ct typ) (Get ct' typ) = IsSubList ct ct'
+\end{verbatim}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\begin{verbatim}
+type family IsElem link api :: Constraint where
+  IsElem e (sa :<|> sb) = IsElem e sa `Or` IsElem e sb
+  IsElem (a1 :> b1) (a1 :> b2) = IsElem b1 b2
+  ...
+  IsElem (Get ct typ) (Get ct' typ) = IsSubList ct ct'
+
+class HasLink endpoint where
+  type MkLink endpoint
+  toLink :: Proxy endpoint -> Link -> MkLink endpoint
+
+safeLink :: (IsElem endpoint api, HasLink endpoint)
+  => Proxy api -> Proxy endpoint -> MkLink endpoint
+\end{verbatim}
+\end{frame}
+
+
+
+\section{Putting it all together} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+What does \textit{using} this actually look like?
+\end{frame}
+
+\verbatimfont{\footnotesize}%
+\begin{frame}[fragile]
+\begin{verbatim}
+data Person ...
+data About ...
+
+type PersonApi = Capture "name" String :> Get '[JSON] (Maybe Person)
+            :<|> Get '[JSON] [Person]
+            :<|> ReqBody '[JSON] Person :> Post '[] ()
+
+type AboutApi = Get '[XML] About
+
+type TheApi = "person" :> UserApi
+         :<|> "about" :> AboutApi
+
+personServer :: Server PersonApi
+personServer = \name -> lookupInDb name
+          :<|> return lookupAll
+          :<|> \person -> saveInDb person
+
+aboutServer :: Server AboutApi
+aboutServer = ...
+
+theServer :: Server TheApi
+theServer = personServer :<|> aboutServer
+\end{verbatim}
+
+\end{frame}
+
+\begin{frame}[fragile]
+
+\begin{verbatim}
+apiProxy :: Proxy TheApi
+apiProxy = Proxy
+
+main :: IO ()
+main = run 8000 $ serve apiProxy theServer
+\end{verbatim}
+
+\end{frame}
+
+\begin{frame}[fragile]
+
+\begin{verbatim}
+type PersonApi = Capture "name" String :> Get '[JSON] (Maybe Person)
+            :<|> Get '[JSON] [Person]
+            :<|> ReqBody '[JSON] Person :> Post '[] ()
+
+type AboutApi = Get '[XML] About
+
+type TheApi = "person" :> UserApi
+         :<|> "about" :> AboutApi
+
+getPerson :: String -> EitherT ServantError IO (Maybe Person)
+getPeople :: EitherT ServantError IO [Person]
+postPerson :: Person -> EitherT ServantError IO ()
+getAbout :: EitherT ServantError IO About
+(getPerson :<|> getPeople :<|> postPerson :<|> getAbout)
+    = client url apiProxy
+  where url = BaseUrl "localhost" 8080
+\end{verbatim}
+
+\end{frame}
+\end{document}
