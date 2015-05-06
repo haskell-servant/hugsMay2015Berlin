@@ -49,10 +49,6 @@ a -> a
 \end{frame}
 
 \begin{frame}[fragile]
-    The identity function:
-\begin{verbatim}
-a -> a
-\end{verbatim}
     The identity (echo) server:
 \begin{verbatim}
 Request -> IO Response
@@ -67,10 +63,6 @@ Request -> IO Response
 \end{frame}
 
 \begin{frame}[fragile]
-    The reverse function:
-\begin{verbatim}
-[a] -> [a]
-\end{verbatim}
     The reverse server:
 \begin{verbatim}
 Request -> IO Response
@@ -85,12 +77,7 @@ Request -> IO Response
 \end{frame}
 
 \begin{frame}[fragile]
-    An informal specification of the identity function:
-\begin{quotation}
-    For any input, the function must return the input unchanged.
-\end{quotation}
-
-    An informal specification of the echo function:
+    An informal specification of the echo server:
 \begin{quotation}
     For any request, if the request has URL \texttt{"echo"}, \textit{and} the
     request method is \texttt{POST}, \textit{and} the \texttt{Content-Type}
@@ -269,7 +256,7 @@ instance (AsInt a, AsInt b) => AsInt (Add a b) where
             + asInt (Proxy :: Proxy b)
 
 instance (KnownNat a) => AsInt a where
-    asInt _ = natVal (Proxy :: Proxy a)
+    asInt = natVal
 \end{verbatim}
 \end{frame}
 
